@@ -1,4 +1,3 @@
-const Buffer = require('buffer');
 const http = require('http');
 
 
@@ -6,12 +5,12 @@ module.exports=function(body){
     const postData = JSON.stringify(body);
 
     const options = {
-        hostname: 'www.google.com',
-        port: 80,
-        path: '/upload',
+        host: '127.0.0.1',
+        port: 3000,
+        path: '/project',
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(postData)
         }
     };
