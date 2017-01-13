@@ -1,26 +1,27 @@
 'use strict';
 
+const devMode = process.env.NODE_ENV==="development";
+const HOST_URL = devMode? "127.0.0.1" : "52.54.16.223"
+const HOST_PORT =3000
+const UpdateInterval = devMode? 8000 : 15000
+
 const os = require('os');
 const path = require('path')
 const fs = require('fs');
+const electronApp = require('electron').app;
+
 const HttpHelper = require('./httpHelper')
+const uuidGen = require('./uuidGen');
 
 const appDir = path.dirname(require.main.filename);
-
-const configFolderPath = path.join(os.tmpdir(),'.deskop');
-const configFilePath=path.join(configFolderPath , '.config')
-
 const pjson = require(path.join(appDir,'package.json'));
-const uuidGen = require('./uuidGen');
+const AppName = pjson.name || "neutrino"
+const configFolderPath = path.join(os.homedir(), "."+AppName);
+const configFilePath=path.join(configFolderPath , '.config')
 
 let configJson=null;
 let _appId="";
 
-const electronApp = require('electron').app;
-
-const devMode = process.env.NODE_ENV==="development";
-
-console.log(configFilePath)
 
 /**
  *
@@ -29,33 +30,30 @@ console.log(configFilePath)
  */
 module.exports = function(appId) {
     _appId=appId;
-
-    setInterval(function () {
-
-        if(!configJson){
-            getUserConfig()
-                .then(function(result){
-                    if(result){
-                        configJson = result
-                    }
-                })
-                .catch(function(err){
-                    console.log(err)
-                })
-        }else{
-            HttpHelper(getUpdateData())
-            console.log(getUpdateData())
-        }
-
-    }, 15000);
+    setInterval(updateSession, UpdateInterval);
 };
 
 if(devMode){
     module.exports("TRIAL_ID")
 }
 
-function getUpdateData(){
+function updateSession(){
+    if(!configJson){
+        getUserConfig()
+            .then(function(result){
+                if(result){
+                    configJson = result
+                }
+            })
+            .catch(function(err){
+                console.log(err)
+            })
+    }else{
+        HttpHelper(HOST_URL, HOST_PORT, "/project", "POST", getUpdateData())
+    }
+}
 
+function getUpdateData(){
 
     let updateInfo={};
 
@@ -66,20 +64,16 @@ function getUpdateData(){
     }
 
     if(electronApp){
-        updateInfo.language=electronApp.getLocale()
+        let locale=electronApp.getLocale()
+        if(locale){
+            updateInfo.language= locale.split("-")[0]
+        }
     }
-
 
     updateInfo.appId=_appId;
     updateInfo.os=os.platform();
-
-    let netWorkInterface=os.networkInterfaces();
-    if(netWorkInterface.eth0 && netWorkInterface.eth0[0]){
-        updateInfo.ip=netWorkInterface.eth0[0].address;
-    }else if(os.networkInterfaces().wlo1 && os.networkInterfaces().wlo1[0]){
-        updateInfo.ip=netWorkInterface.wlo1[0].address;
-    }else{
-        updateInfo.ip=null;
+    if(updateInfo.os==="darwin"){
+        updateInfo.os="mac";
     }
 
     if(pjson){
@@ -89,7 +83,8 @@ function getUpdateData(){
         }
     }
 
-
+    var accessTime = new Date()
+    updateInfo.accessTime = (new Date(accessTime.getTime()- accessTime.getTimezoneOffset()*60000)).toISOString()
 
     return updateInfo;
 }

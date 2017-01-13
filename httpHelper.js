@@ -1,14 +1,20 @@
 const http = require('http');
 
+let lock = false;
 
-module.exports=function(body){
+
+module.exports=function(url, port, path, method, body){
+    if(lock){
+       return;
+    }
+    lock=true;
     const postData = JSON.stringify(body);
 
     const options = {
-        host: '127.0.0.1',
-        port: 3000,
-        path: '/project',
-        method: 'POST',
+        host: url,
+        port: port,
+        path: path,
+        method: method,
         headers: {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(postData)
@@ -16,18 +22,17 @@ module.exports=function(body){
     };
 
     const req = http.request(options, (res) => {
-        console.log(`STATUS: ${res.statusCode}`);
-        console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
         res.setEncoding('utf8');
         res.on('data', (chunk) => {
             console.log(`BODY: ${chunk}`);
         });
         res.on('end', () => {
-            console.log('No more data in response.');
+            lock=false;
         });
     });
 
     req.on('error', (e) => {
+        lock=false;
         console.log(`problem with request: ${e.message}`);
     });
 
