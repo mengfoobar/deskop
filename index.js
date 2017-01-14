@@ -8,11 +8,11 @@ const UpdateInterval = devMode? 8000 : 30000
 const os = require('os');
 const path = require('path')
 const fs = require('fs');
-const electronApp = require('electron').app;
 
 const FileIOUtils = require('./utils/fileIOUtils')
 const HttpHelper = require('./utils/httpHelper')
 const uuidGen = require('./utils/uuidGen');
+const UpdateJSONUtils = require('./utils/updateJSONUtils')
 
 const appDir = path.dirname(require.main.filename);
 const pjson = require(path.join(appDir,'package.json'));
@@ -21,7 +21,7 @@ const configFolderPath = path.join(os.homedir(), "."+AppName);
 const configFilePath=path.join(configFolderPath , '.config')
 
 let configJson=null;
-let _appId="";
+let updateJSON={};
 
 
 /**
@@ -30,7 +30,24 @@ let _appId="";
  * @return {string}
  */
 module.exports = function(appId) {
-    _appId=appId;
+    let osPlatform = os.platform().replace("darwin", "mac");
+    let appName = pjson.name || "";
+    let appVersion = pjson.version || "";
+    let accessTime = UpdateJSONUtils.getTimestampInUTC();
+    let locale= UpdateJSONUtils.getSystemLocale();
+
+    updateJSON={
+        userId:"",
+        language:locale,
+        appId:appId,
+        os: osPlatform,
+        appMeta:{
+            name:appName,
+            version:appVersion
+        },
+        accessTime:accessTime
+    }
+
     setInterval(updateSession, UpdateInterval);
 };
 
@@ -40,6 +57,7 @@ function updateSession(){
             .then(function(result){
                 if(result){
                     configJson = result;
+                    updateJSON.userId=configJson.userId;
                     return Promise.resolve(true)
                 }else{
                     return setUserConfig();
@@ -54,57 +72,20 @@ function updateSession(){
                 console.log(`[neutrino] Error: ${err.message}`)
             })
     }else{
-        HttpHelper(HOST_URL, HOST_PORT, "/project", "POST", getUpdateData())
+        updateJSON.accessTime= UpdateJSONUtils.getTimestampInUTC()
+        HttpHelper(HOST_URL, HOST_PORT, "/project", "POST", updateJSON)
     }
-}
-
-function getUpdateData(){
-
-    let updateInfo={};
-
-    if(configJson){
-        if(configJson.userId) updateInfo.userId=configJson.userId;
-    }else{
-        return;
-    }
-
-    if(electronApp){
-        let locale=electronApp.getLocale()
-        if(locale){
-            updateInfo.language= locale.split("-")[0]
-        }
-    }
-
-    updateInfo.appId=_appId;
-    updateInfo.os=os.platform();
-    if(updateInfo.os==="darwin"){
-        updateInfo.os="mac";
-    }
-
-    if(pjson){
-        updateInfo.appMeta={
-            name:pjson.name,
-            version:pjson.version
-        }
-    }
-
-    let accessTime = new Date()
-    updateInfo.accessTime = (new Date(accessTime.getTime()- accessTime.getTimezoneOffset()*60000)).toISOString()
-
-    return updateInfo;
 }
 
 function getUserConfig(){
     return FileIOUtils.checkIfFileExist(configFilePath)
         .then(function(result){
-            console.log(`result of checking if file exist is ${result}`)
             if(result){
                 return FileIOUtils.readJSONFromFile(configFilePath)
             }else{
                 return Promise.resolve(false)
             }
         })
-
 }
 
 function setUserConfig(){
@@ -120,6 +101,6 @@ function setUserConfig(){
             }
             return FileIOUtils.writeJSONToFile(configFilePath, config)
         })
-
 }
+
 
