@@ -3,15 +3,16 @@
 const devMode = process.env.NODE_ENV==="development";
 const HOST_URL = devMode? "127.0.0.1" : "52.54.16.223"
 const HOST_PORT =3000
-const UpdateInterval = devMode? 8000 : 15000
+const UpdateInterval = devMode? 8000 : 30000
 
 const os = require('os');
 const path = require('path')
 const fs = require('fs');
 const electronApp = require('electron').app;
 
-const HttpHelper = require('./httpHelper')
-const uuidGen = require('./uuidGen');
+const FileIOUtils = require('./utils/fileIOUtils')
+const HttpHelper = require('./utils/httpHelper')
+const uuidGen = require('./utils/uuidGen');
 
 const appDir = path.dirname(require.main.filename);
 const pjson = require(path.join(appDir,'package.json'));
@@ -33,20 +34,24 @@ module.exports = function(appId) {
     setInterval(updateSession, UpdateInterval);
 };
 
-if(devMode){
-    module.exports("TRIAL_ID")
-}
-
 function updateSession(){
     if(!configJson){
         getUserConfig()
             .then(function(result){
                 if(result){
-                    configJson = result
+                    configJson = result;
+                    return Promise.resolve(true)
+                }else{
+                    return setUserConfig();
+                }
+            })
+            .then(function(result){
+                if(!result){
+                    throw new Error("was unable to set user config file.")
                 }
             })
             .catch(function(err){
-                console.log(err)
+                console.log(`[neutrino] Error: ${err.message}`)
             })
     }else{
         HttpHelper(HOST_URL, HOST_PORT, "/project", "POST", getUpdateData())
@@ -83,88 +88,38 @@ function getUpdateData(){
         }
     }
 
-    var accessTime = new Date()
+    let accessTime = new Date()
     updateInfo.accessTime = (new Date(accessTime.getTime()- accessTime.getTimezoneOffset()*60000)).toISOString()
 
     return updateInfo;
 }
 
 function getUserConfig(){
-    return new Promise(function(resolve, reject){
-        checkIfFile(configFilePath, function(err, isFile) {
-            if (isFile) {
-                fs.readFile(configFilePath, "utf8", function(err, data) {
-                    if (err) throw err;
-                    try{
-                        let configJson = JSON.parse(data);
-                        resolve(configJson);
-                    }catch(err){
-                        console.log("file corrupted. Removing file");
-                        fs.unlink(configFilePath);
-                    }
-
-                });
+    return FileIOUtils.checkIfFileExist(configFilePath)
+        .then(function(result){
+            console.log(`result of checking if file exist is ${result}`)
+            if(result){
+                return FileIOUtils.readJSONFromFile(configFilePath)
             }else{
-                console.log("setting user config")
-                setUserConfig()
-                    .then(function(result){
-                        if(result){
-                            resolve(result)
-                        }
-                    })
-                    .catch(function(err){
-                        reject()
-                    })
+                return Promise.resolve(false)
             }
-        });
-    })
+        })
 
 }
 
 function setUserConfig(){
 
-    if (!isDirSync(configFolderPath)) {
-        fs.mkdirSync(configFolderPath);
-    }
-
     let config={
         userId: uuidGen()
     }
 
-    return new Promise(function(resolve, reject){
-        fs.writeFile(configFilePath, JSON.stringify(config), function (err) {
-            if (err) {
-                reject(err)
-            }else{
-                resolve(config)
+    return FileIOUtils.ensureFolderExist(configFolderPath)
+        .then(function(result){
+            if(!result){
+                return Promise.resolve(false)
             }
-        });
-    })
-
+            return FileIOUtils.writeJSONToFile(configFilePath, config)
+        })
 
 }
 
-function isDirSync(aPath) {
-    try {
-        return fs.statSync(aPath).isDirectory();
-    } catch (e) {
-        if (e.code === 'ENOENT') {
-            return false;
-        } else {
-            throw e;
-        }
-    }
-}
-
-function checkIfFile(file, cb) {
-    fs.stat(file, function fsStat(err, stats) {
-        if (err) {
-            if (err.code === 'ENOENT') {
-                return cb(null, false);
-            } else {
-                return cb(err);
-            }
-        }
-        return cb(null, stats.isFile());
-    });
-}
