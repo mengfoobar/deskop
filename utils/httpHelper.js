@@ -36,7 +36,6 @@ module.exports=function(url, port, path, method, body){
         console.log(`problem with request: ${e.message}`);
     });
 
-// write data to request body
     req.write(postData);
     req.end();
 }

@@ -1,0 +1,16 @@
+{
+  "development":{
+    "statsServer":{
+      "host":"127.0.0.1",
+      "port":3000
+    },
+    "updateInterval": 8000
+  },
+  "production":{
+    "statsServer":{
+      "host":"52.54.16.223",
+      "port":3000
+    },
+    "updateInterval": 30000
+  }
+}

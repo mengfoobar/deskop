@@ -1,9 +1,11 @@
 'use strict';
 
 const devMode = process.env.NODE_ENV==="development";
-const HOST_URL = devMode? "127.0.0.1" : "52.54.16.223"
-const HOST_PORT =3000
-const UpdateInterval = devMode? 8000 : 30000
+const config = devMode ? require("./config.json").development:  require("./config.json").production
+
+const HOST_URL = config.statsServer.host
+const HOST_PORT =config.statsServer.port
+const UPDATE_INTERVAL =config.updateInterval
 
 const os = require('os');
 const path = require('path')
@@ -17,11 +19,11 @@ const UpdateJSONUtils = require('./utils/updateJSONUtils')
 const appDir = path.dirname(require.main.filename);
 const pjson = require(path.join(appDir,'package.json'));
 const AppName = pjson.name || "neutrino"
-const configFolderPath = path.join(os.homedir(), "."+AppName);
-const configFilePath=path.join(configFolderPath , '.config')
+const userConfigFolderPath = path.join(os.homedir(), "."+AppName);
+const userConfigFilePath=path.join(userConfigFolderPath , '.config')
 
-let configJson=null;
-let updateJSON={};
+let userConfigJson=null;
+let updateJson={};
 
 
 /**
@@ -36,7 +38,7 @@ module.exports = function(appId) {
     let accessTime = UpdateJSONUtils.getTimestampInUTC();
     let locale= UpdateJSONUtils.getSystemLocale();
 
-    updateJSON={
+    updateJson={
         userId:"",
         language:locale,
         appId:appId,
@@ -48,16 +50,16 @@ module.exports = function(appId) {
         accessTime:accessTime
     }
 
-    setInterval(updateSession, UpdateInterval);
+    setInterval(updateSession, UPDATE_INTERVAL);
 };
 
 function updateSession(){
-    if(!configJson){
+    if(!userConfigJson){
         getUserConfig()
             .then(function(result){
                 if(result){
-                    configJson = result;
-                    updateJSON.userId=configJson.userId;
+                    userConfigJson = result;
+                    updateJson.userId=userConfigJson.userId;
                     return Promise.resolve(true)
                 }else{
                     return setUserConfig();
@@ -72,16 +74,16 @@ function updateSession(){
                 console.log(`[neutrino] Error: ${err.message}`)
             })
     }else{
-        updateJSON.accessTime= UpdateJSONUtils.getTimestampInUTC()
-        HttpHelper(HOST_URL, HOST_PORT, "/project", "POST", updateJSON)
+        updateJson.accessTime= UpdateJSONUtils.getTimestampInUTC()
+        HttpHelper(HOST_URL, HOST_PORT, "/project", "POST", updateJson)
     }
 }
 
 function getUserConfig(){
-    return FileIOUtils.checkIfFileExist(configFilePath)
+    return FileIOUtils.checkIfFileExist(userConfigFilePath)
         .then(function(result){
             if(result){
-                return FileIOUtils.readJSONFromFile(configFilePath)
+                return FileIOUtils.readJSONFromFile(userConfigFilePath)
             }else{
                 return Promise.resolve(false)
             }
@@ -94,12 +96,12 @@ function setUserConfig(){
         userId: uuidGen()
     }
 
-    return FileIOUtils.ensureFolderExist(configFolderPath)
+    return FileIOUtils.ensureFolderExist(userConfigFolderPath)
         .then(function(result){
             if(!result){
                 return Promise.resolve(false)
             }
-            return FileIOUtils.writeJSONToFile(configFilePath, config)
+            return FileIOUtils.writeJSONToFile(userConfigFilePath, config)
         })
 }
 

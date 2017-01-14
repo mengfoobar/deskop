@@ -44,8 +44,12 @@ module.exports={
                             console.log(`[neutrino] Error: encountered error when attempting to verify path. ${err}`)
                             resolve(false)
                         }
+                    }else if(!stats){
+                        resolve(false)
+                    }else{
+                        resolve(stats.isFile()) ;
                     }
-                    resolve(stats.isFile()) ;
+
                 });
             }catch(err){
                 resolve(false)

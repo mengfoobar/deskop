@@ -1,17 +1,12 @@
-Deskop client library
+Neutrino Metrics client library
 =========
 
-For use by chromium based desktop applications to send analytics to Deskop server.
+For use by electron applications to feed analytics to Neutrino Metrics.
 
 ## Installation
 
-  `npm installl desktop-client`
+    npm install neutrino-metrics --save
 
 ## Usage
 
-    require('deskop-client');
-
-
-## Tests
-
-  `npm test`
+    require('neutrino-metrics')("<Your App ID>");
