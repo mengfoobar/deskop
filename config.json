@@ -8,8 +8,8 @@
   },
   "production":{
     "statsServer":{
-      "host":"52.54.16.223",
-      "port":3000
+      "host":"34.195.107.11",
+      "port":3002
     },
     "updateInterval": 30000
   }
