@@ -11,6 +11,6 @@
       "host":"34.195.107.11",
       "port":3002
     },
-    "updateInterval": 30000
+    "updateInterval": 15000
   }
 }

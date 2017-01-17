@@ -1,13 +1,7 @@
 const http = require('http');
 
-let lock = false;
-
 
 module.exports=function(url, port, path, method, body){
-    if(lock){
-       return;
-    }
-    lock=true;
     const postData = JSON.stringify(body);
 
     const options = {
@@ -23,14 +17,11 @@ module.exports=function(url, port, path, method, body){
 
     const req = http.request(options, (res) => {
         res.setEncoding('utf8');
-        res.on('end', () => {
-            lock=false;
-        });
+        res.on('data', (chunk) => {});
+        res.on('end', () => {});
     });
 
-    req.on('error', (e) => {
-        lock=false;
-    });
+    req.on('error', (e) => {});
 
     req.write(postData);
     req.end();

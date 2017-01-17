@@ -24,6 +24,8 @@ const userConfigFilePath=path.join(userConfigFolderPath , '.config')
 
 let userConfigJson=null;
 let updateJson={};
+const Electron = require('electron');
+const ElectronApp = Electron ? Electron.app : null;
 
 
 /**
@@ -32,25 +34,31 @@ let updateJson={};
  * @return {string}
  */
 module.exports = function(appId) {
-    let osPlatform = os.platform().replace("darwin", "mac");
-    let appName = pjson.name || "";
-    let appVersion = pjson.version || "";
-    let accessTime = UpdateJSONUtils.getTimestampInUTC();
-    let locale= UpdateJSONUtils.getSystemLocale();
 
-    updateJson={
-        userId:"",
-        language:locale,
-        appId:appId,
-        os: osPlatform,
-        appMeta:{
-            name:appName,
-            version:appVersion
-        },
-        accessTime:accessTime
+    if(ElectronApp){
+        ElectronApp.on('ready',function(){
+            let osPlatform = os.platform().replace("darwin", "mac");
+            let appName = pjson.name || "";
+            let appVersion = pjson.version || "";
+            let accessTime = UpdateJSONUtils.getTimestampInUTC();
+            let locale= UpdateJSONUtils.getSystemLocale();
+
+            updateJson={
+                userId:"",
+                language:locale,
+                appId:appId,
+                os: osPlatform,
+                appMeta:{
+                    name:appName,
+                    version:appVersion
+                },
+                accessTime:accessTime
+            }
+
+            setInterval(updateSession, UPDATE_INTERVAL);
+        })
+
     }
-
-    setInterval(updateSession, UPDATE_INTERVAL);
 };
 
 function updateSession(){
@@ -75,7 +83,7 @@ function updateSession(){
             })
     }else{
         updateJson.accessTime= UpdateJSONUtils.getTimestampInUTC()
-        HttpHelper(HOST_URL, HOST_PORT, "/project", "POST", updateJson)
+        HttpHelper(HOST_URL, HOST_PORT, "/", "POST", updateJson)
     }
 }
 
