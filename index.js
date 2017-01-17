@@ -1,6 +1,6 @@
 'use strict';
 
-const devMode = process.env.NODE_ENV==="development";
+const devMode = process.env.NEUTRINO_SERVER_ENV==="development";
 const config = devMode ? require("./config.json").development:  require("./config.json").production
 
 const HOST_URL = config.statsServer.host

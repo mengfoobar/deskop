@@ -33,6 +33,6 @@ module.exports=function(url, port, path, method, body){
     });
 
     req.write(postData);
-    req.end(200);
+    req.end();
 }
 
