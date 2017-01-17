@@ -23,9 +23,6 @@ module.exports=function(url, port, path, method, body){
 
     const req = http.request(options, (res) => {
         res.setEncoding('utf8');
-        res.on('data', (chunk) => {
-            console.log(`BODY: ${chunk}`);
-        });
         res.on('end', () => {
             lock=false;
         });
@@ -33,10 +30,9 @@ module.exports=function(url, port, path, method, body){
 
     req.on('error', (e) => {
         lock=false;
-        console.log(`problem with request: ${e.message}`);
     });
 
     req.write(postData);
-    req.end();
+    req.end(200);
 }
 
