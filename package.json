@@ -1,6 +1,6 @@
 {
   "name": "neutrino-metrics",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "client side module for neutrino metrics",
   "main": "index.js",
   "repository": {
