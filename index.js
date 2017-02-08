@@ -4,7 +4,9 @@ const devMode = process.env.NEUTRINO_SERVER_ENV==="development";
 const config = devMode ? require("./config.json").development:  require("./config.json").production
 const HttpHelper = require('./utils/httpHelper')
 const uuidGen = require('./utils/uuidGen');
-const UpdateJSONUtils = require('./utils/updateJSONUtils')
+const UpdateJSONUtils = require('./utils/updateJSONUtils');
+const FileIOUtils = require('./utils/fileIOUtils')
+
 
 const HOST_URL = config.statsServer.host
 const HOST_PORT =config.statsServer.port
@@ -14,6 +16,8 @@ const Electron = require('electron') ? require('electron').remote : null
 
 let ElectronApp;
 let PKG_JSON;
+let os;
+
 
 let updateJson={};
 
@@ -37,16 +41,14 @@ module.exports = {
         
         PKG_JSON = require(path.join(path.dirname(require.main.filename),'package.json'));
 
-
         if(ElectronApp){
             let osPlatform = os.platform().replace("darwin", "mac");
             let accessTime = UpdateJSONUtils.getTimestampInUTC();
             let locale= UpdateJSONUtils.getSystemLocale(ElectronApp);
-
-            let userConfigJson = getUserConfig() || setUserConfig();
+            let appName=PKG_JSON.name || "neutrino"
 
             updateJson={
-                userId:userConfigJson.userId,
+                userId:"",
                 language:locale,
                 appId:appId,
                 os: osPlatform,
@@ -57,7 +59,27 @@ module.exports = {
                 accessTime:accessTime
             }
 
-            setInterval(updateSession, UPDATE_INTERVAL);
+            let userConfigJson = getUserConfig();
+
+            if(!userConfigJson){
+                getUserConfigFromSettingsFile(appName)
+                    .then(function(result){
+                        if(result && result.userId){
+                            userConfigJson= setUserConfig(result.userId)
+                        } else{
+                            userConfigJson = setUserConfig()
+                        }
+                        updateJson.userId=userConfigJson.userId;
+                        setInterval(updateSession, UPDATE_INTERVAL);
+                    })
+                    .catch(function(err){
+                        console.log(err.message)
+                    })
+            }else{
+                updateJson.userId=userConfigJson.userId;
+                setInterval(updateSession, UPDATE_INTERVAL);
+            }
+
         }
     },
     event(eventName){
@@ -96,10 +118,27 @@ function getUserConfig(){
     }
 }
 
-function setUserConfig(){
-    localStorage.setItem('userId', uuidGen());
+function setUserConfig(userId=null){
 
+    localStorage.setItem('userId', userId || uuidGen());
     return getUserConfig();
 }
 
+function getUserConfigFromSettingsFile(appName){
+
+    let path =Electron.require('path');
+    let os =  Electron.require('os');
+
+    const userConfigFolderPath = path.join(os.homedir(), "."+appName);
+    const userConfigFilePath=path.join(userConfigFolderPath , '.config')
+
+    return FileIOUtils.checkIfFileExist(userConfigFilePath)
+        .then(function(result){
+            if(result){
+                return FileIOUtils.readJSONFromFile(userConfigFilePath)
+            }else{
+                return Promise.resolve(false)
+            }
+        })
+}
 
