@@ -139,10 +139,10 @@ function getUserConfigFromSettingsFile(appName){
     const userConfigFolderPath = path.join(os.homedir(), "."+appName);
     const userConfigFilePath=path.join(userConfigFolderPath , '.config')
 
-    return FileIOUtils.checkIfFileExist(userConfigFilePath)
+    return FileIOUtils.checkIfFileExist(Electron,userConfigFilePath)
         .then(function(result){
             if(result){
-                return FileIOUtils.readJSONFromFile(userConfigFilePath)
+                return FileIOUtils.readJSONFromFile(Electron, userConfigFilePath)
             }else{
                 return Promise.resolve(false)
             }
