@@ -21,7 +21,8 @@ In your index.html (or entry js file in renderer process), add the following scr
      neutrino.init("<YOUR APP ID>");
 </script>
 ```
-##### NOTE*: renderer process runs your "web page" code. Check out the electron docs [Renderer Process](http://electron.atom.io/docs/tutorial/quick-start/#renderer-process) for more info.
+**NOTE***: renderer process runs your "web page" code. Check out the electron docs [Renderer Process](http://electron.atom.io/docs/tutorial/quick-start/#renderer-process) for more info.
+
 
 #### Custom Events
 After initializing **neutrino** instance, you can send your own custom events:
