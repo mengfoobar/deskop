@@ -1,10 +1,8 @@
 'use strict';
 
-const devMode = process.env.NEUTRINO_SERVER_ENV==="development";
-
 const ConfigFile = require("./config.js");
 
-const config = devMode ? ConfigFile.development: ConfigFile.production
+const config = ConfigFile.production
 const HttpHelper = require('./utils/httpHelper')
 const uuidGen = require('./utils/uuidGen');
 const UpdateJSONUtils = require('./utils/updateJSONUtils');
@@ -38,6 +36,7 @@ module.exports = {
 
         let os =  Electron.require('os');
         let path =Electron.require('path');
+        HttpHelper.init(Electron)
 
 
         if(ElectronApp){
@@ -88,7 +87,7 @@ module.exports = {
             return;
         }
 
-        HttpHelper(HOST_URL, HOST_PORT, "/event", "POST",
+        HttpHelper.request(HOST_URL, HOST_PORT, "/event", "POST",
             {
                 userId:updateJson.userId,
                 appId:updateJson.appId,
@@ -104,7 +103,7 @@ module.exports = {
 
 function updateSession(){
     updateJson.accessTime= UpdateJSONUtils.getTimestampInUTC()
-    HttpHelper(HOST_URL, HOST_PORT, "/", "POST", updateJson)
+    HttpHelper.request(HOST_URL, HOST_PORT, "/", "POST", updateJson)
 }
 
 function getUserConfig(appId){
