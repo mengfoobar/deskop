@@ -59,15 +59,15 @@ module.exports = {
                 accessTime:accessTime
             }
 
-            let userConfigJson = getUserConfig();
+            let userConfigJson = getUserConfig(appId);
 
             if(!userConfigJson){
                 getUserConfigFromSettingsFile(appName)
                     .then(function(result){
                         if(result && result.userId){
-                            userConfigJson= setUserConfig(result.userId)
+                            userConfigJson= setUserConfig(appId, result.userId)
                         } else{
-                            userConfigJson = setUserConfig()
+                            userConfigJson = setUserConfig(appId)
                         }
                         updateJson.userId=userConfigJson.userId;
                         setInterval(updateSession, UPDATE_INTERVAL);
@@ -107,21 +107,28 @@ function updateSession(){
     HttpHelper(HOST_URL, HOST_PORT, "/", "POST", updateJson)
 }
 
-function getUserConfig(){
-    let userId=localStorage.getItem('userId');
-    if(!userId){
-        return null;
+function getUserConfig(appId){
+    let configStr=localStorage.getItem(appId);
+    let configJSON=null;
+
+    if(configStr){
+        try{
+            configJSON=JSON.parse(configStr)
+        }catch(err){
+            configJSON=null;
+        }
     }
 
-    return {
-        userId: userId
-    }
+    return configJSON;
 }
 
-function setUserConfig(userId=null){
+function setUserConfig(appId, userId=null){
+    let configJson = {
+        userId:userId || uuidGen()
+    }
 
-    localStorage.setItem('userId', userId || uuidGen());
-    return getUserConfig();
+    localStorage.setItem(appId, JSON.stringify(configJson));
+    return getUserConfig(appId);
 }
 
 function getUserConfigFromSettingsFile(appName){
