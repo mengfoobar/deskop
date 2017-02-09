@@ -1,7 +1,10 @@
 'use strict';
 
 const devMode = process.env.NEUTRINO_SERVER_ENV==="development";
-const config = devMode ? require("./config.json").development:  require("./config.json").production
+
+const ConfigFile = require("./config.js");
+
+const config = devMode ? ConfigFile.development: ConfigFile.production
 const HttpHelper = require('./utils/httpHelper')
 const uuidGen = require('./utils/uuidGen');
 const UpdateJSONUtils = require('./utils/updateJSONUtils');
@@ -12,12 +15,9 @@ const HOST_URL = config.statsServer.host
 const HOST_PORT =config.statsServer.port
 const UPDATE_INTERVAL =config.updateInterval
 
-const Electron = require('electron') ? require('electron').remote : null
-
+const ElectronLib = require('electron');
+const Electron = ElectronLib ? ElectronLib.remote : null
 let ElectronApp;
-let PKG_JSON;
-let os;
-
 
 let updateJson={};
 
@@ -28,24 +28,24 @@ let updateJson={};
  */
 module.exports = {
 
-    init(appId){
+    init:function(appId){
         if(!Electron){
             console.log("Error: no electron library found.")
             return null;
         }
 
         ElectronApp= Electron.app;
-        
+
         let os =  Electron.require('os');
         let path =Electron.require('path');
-        
-        PKG_JSON = require(path.join(path.dirname(require.main.filename),'package.json'));
+
 
         if(ElectronApp){
             let osPlatform = os.platform().replace("darwin", "mac");
             let accessTime = UpdateJSONUtils.getTimestampInUTC();
             let locale= UpdateJSONUtils.getSystemLocale(ElectronApp);
-            let appName=PKG_JSON.name || "neutrino"
+            let appName=ElectronApp.getName()
+            let appVersion = ElectronApp.getVersion() || ""
 
             updateJson={
                 userId:"",
@@ -53,8 +53,8 @@ module.exports = {
                 appId:appId,
                 os: osPlatform,
                 appMeta:{
-                    name:PKG_JSON.name || "neutrino",
-                    version:PKG_JSON.version || ""
+                    name:appName,
+                    version:appVersion
                 },
                 accessTime:accessTime
             }
@@ -82,7 +82,7 @@ module.exports = {
 
         }
     },
-    event(eventName){
+    event:function(eventName){
         if(!ElectronApp || !updateJson.appId){
             console.log("Error: neutrino instance not yet initialized");
             return;
