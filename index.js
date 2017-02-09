@@ -36,7 +36,6 @@ module.exports = {
 
         let os =  Electron.require('os');
         let path =Electron.require('path');
-        HttpHelper.init(Electron)
 
 
         if(ElectronApp){
@@ -87,7 +86,7 @@ module.exports = {
             return;
         }
 
-        HttpHelper.request(HOST_URL, HOST_PORT, "/event", "POST",
+        HttpHelper.request(HOST_URL, HOST_PORT, "event", "POST",
             {
                 userId:updateJson.userId,
                 appId:updateJson.appId,
@@ -103,7 +102,7 @@ module.exports = {
 
 function updateSession(){
     updateJson.accessTime= UpdateJSONUtils.getTimestampInUTC()
-    HttpHelper.request(HOST_URL, HOST_PORT, "/", "POST", updateJson)
+    HttpHelper.request(HOST_URL, HOST_PORT, "", "POST", updateJson)
 }
 
 function getUserConfig(appId){

@@ -1,34 +1,27 @@
-let http;
-
 
 module.exports={
-    init:function(Electron){
-        http = Electron.require('http')
-    },
-    request:function(url, port, path, method, body){
-        const postData = JSON.stringify(body);
+    request:function(url, port, path, method, bodyJson){
+        let xhr = new XMLHttpRequest();
+        xhr.open(method, `http://${url}:${port}/${path}`);
 
-        const options = {
-            host: url,
-            port: port,
-            path: path,
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData)
+        if(method !== "GET"){
+            xhr.setRequestHeader('Content-Type', 'application/json');
+        }
+        xhr.onload = function () {
+            if (this.status >= 200 && this.status <= 304) {
+                return true;
+            } else {
+                //do nothing
             }
         };
-
-        const req = http.request(options, (res) => {
-            res.setEncoding('utf8');
-            res.on('data', (chunk) => {});
-            res.on('end', () => {});
-        });
-
-        req.on('error', (e) => {});
-
-        req.write(postData);
-        req.end();
+        xhr.onerror = function () {
+            //do nothing
+        };
+        try{
+            xhr.send(JSON.stringify(bodyJson));
+        }catch(err){
+            //do nothing
+        }
     }
 }
 
