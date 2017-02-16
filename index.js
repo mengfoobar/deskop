@@ -47,6 +47,7 @@ module.exports = {
 
             updateJson={
                 userId:"",
+                customId:"",
                 language:locale,
                 appId:appId,
                 os: osPlatform,
@@ -74,7 +75,8 @@ module.exports = {
                         console.log(err.message)
                     })
             }else{
-                updateJson.userId=userConfigJson.userId;
+                updateJson.userId = userConfigJson.userId;
+                updateJson.customId = userConfigJson.customId;
                 setInterval(updateSession, UPDATE_INTERVAL);
             }
 
@@ -89,11 +91,38 @@ module.exports = {
         HttpHelper.request(HOST_URL, HOST_PORT, "event", "POST",
             {
                 userId:updateJson.userId,
+                customId:updateJson.customId,
                 appId:updateJson.appId,
                 event: eventName,
                 timestamp: UpdateJSONUtils.getTimestampInUTC()
             }
         )
+
+    },
+    setCustomUserId:function(customId){
+        //adding a delay just in case neutrino has note yet been initialized
+        setTimeout(function(){
+            if(!ElectronApp || !updateJson.appId){
+                console.log("Error: neutrino instance not yet initialized");
+                return;
+            }else if(updateJson.customId === customId){
+                return;
+            }
+
+            HttpHelper.request(HOST_URL, HOST_PORT, "project/user", "PUT",
+                {
+                    userId:updateJson.userId,
+                    customId:customId,
+                    appId:updateJson.appId
+                }, function (status) {
+                    if(status===200){
+                        setUserConfig(updateJson.appId, updateJson.userId, customId);
+                        updateJson.customId=customId;
+                    }
+                }
+            )
+        }, 1000)
+
 
     }
 
@@ -120,9 +149,10 @@ function getUserConfig(appId){
     return configJSON;
 }
 
-function setUserConfig(appId, userId=null){
+function setUserConfig(appId, userId=null, customId=null){
     let configJson = {
-        userId:userId || uuidGen()
+        userId:userId || uuidGen(),
+        customId: customId || ""
     }
 
     localStorage.setItem(appId, JSON.stringify(configJson));

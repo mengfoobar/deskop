@@ -1,6 +1,6 @@
 
 module.exports={
-    request:function(url, port, path, method, bodyJson){
+    request:function(url, port, path, method, bodyJson, callBack=null){
         let xhr = new XMLHttpRequest();
         xhr.open(method, `http://${url}:${port}/${path}`);
 
@@ -9,9 +9,9 @@ module.exports={
         }
         xhr.onload = function () {
             if (this.status >= 200 && this.status <= 304) {
-                return true;
-            } else {
-                //do nothing
+                if(callBack){
+                    callBack(this.status)
+                }
             }
         };
         xhr.onerror = function () {
